@@ -34,7 +34,7 @@
 4. `46061ef` — `feat: add safe incident and reserve domain rules`
 5. `5dfc1d3` — `feat: build Spanish household and verification dashboard`
 6. `fd8f3b2` — `build: trim unused Vite plugin dependency`
-7. Pending this documentation commit — session decisions and validation status.
+7. `0082874` — `docs: record implementation decisions and validation`
 
 ## Next action and pending work
 
