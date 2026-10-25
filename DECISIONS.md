@@ -17,12 +17,13 @@
 
 - Completed the household reserve dashboard, incident register/reviewer controls, preparation options, no-phone/no-storage paths, and interactive adversarial view.
 - Added automated tests for authorization, unverified notices, correction/rejection handling, reserve validation, local kNN behavior, and repair denial.
-- Owner-provided, genuine Valeria screenshot-based persona feedback is documented in `docs/PERSONA_TEST.md`; no second persona evaluation was run. Four first-deployment screenshots and the supplementary no-phone/no-storage view are retained in `docs/`.
+- Owner-provided, genuine Valeria screenshot-based persona feedback is documented in `docs/PERSONA_TEST.md`; no additional persona evaluation was run. Four first-deployment screenshots and the supplementary no-phone/no-storage view are retained in `docs/`.
 - Highest-priority persona issue fixed: incident-review actions are hidden in the default resident view and only appear in a clearly labeled simulated reviewer mode; role checks reject resident status changes.
 - Additional persona-driven copy changes clarify estimated percentages, simulated sensor movement, no-notice uncertainty, the resident's zone, no-phone/offline access, no-storage actions, and expected-vs-executed adversarial checks.
 - `npm test`: 6 passed, 0 failed after persona fixes.
 - `npm run build`: passed after persona fixes.
 - Browser verification confirmed zero incident review buttons in resident mode and controls appear only after opting into the simulated reviewer mode. Automated domain checks reject resident approval, correction, and rejection; the original pending incident remains pending and produces no verified notice.
+- The second Vercel production deployment from code commit `dd461bf` reached Ready. The live `https://week11-kohl.vercel.app/` page serves the updated build; browser verification found zero review actions in resident mode, explicit current/other zone labels, and review controls only after simulated reviewer-mode opt-in.
 - Earlier browser checks confirmed repair requests are denied, invalid reserve input is rejected, valid estimates update in-session, and the no-phone/no-storage profile receives its offline route and zone's simulated verified notice.
 - Browser testing found that pending anomaly readings could otherwise follow a profile switch; changed pending review state to be keyed by fictional household.
 - A first automated test revealed that the kNN's fictional training points did not classify a large reserve drop consistently; added neighboring fictional anomaly examples and the test now passes.
@@ -39,11 +40,12 @@
 5. `5dfc1d3` — `feat: build Spanish household and verification dashboard`
 6. `fd8f3b2` — `build: trim unused Vite plugin dependency`
 7. `0082874` — `docs: record implementation decisions and validation`
-8. Pending — persona-driven resident/reviewer separation, language updates, screenshots, and feedback report.
+8. `c82d7e5` — `docs: finalize session decision record`
+9. `dd461bf` — `fix: separate resident and reviewer incident views`
 
 ## Next action and pending work
 
-- **Next action:** commit these persona-driven changes, push them to the configured GitHub `main` branch, then verify that Vercel completes the second deployment from the push and that the live app shows the resident/reviewer separation.
-- The first deployment is `https://week11-kohl.vercel.app/`; second deployment verification is pending.
-- Still pending: final PDFs and demo video.
+- The persona-driven changes and screenshots are committed and pushed to GitHub `main` at `dd461bf`.
+- The second Vercel production deployment is Ready and verified at `https://week11-kohl.vercel.app/` (deployment-specific URL: `https://week11-je8b8cb3i-ines-escoto-builder.vercel.app/`).
+- **Next action:** complete the final PDFs and demo video; do not claim either complete until produced and reviewed.
 - No production pilot results or impact are claimed. A real pilot with no real events must be reported as inconclusive.
