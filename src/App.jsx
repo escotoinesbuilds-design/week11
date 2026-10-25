@@ -24,6 +24,7 @@ const statusLabels = {
 
 function App() {
   const [activeView, setActiveView] = useState('home');
+  const [reviewerMode, setReviewerMode] = useState(false);
   const [selectedId, setSelectedId] = useState(DEMO_HOUSEHOLDS[0].id);
   const [households, setHouseholds] = useState(DEMO_HOUSEHOLDS);
   const [incidents, setIncidents] = useState(INITIAL_INCIDENTS);
@@ -136,7 +137,8 @@ function App() {
 
   function updateIncident(id, action) {
     const target = incidents.find((incident) => incident.id === id);
-    const result = reviewIncident(target, action, 'authorized-utility-reviewer', reviewNote);
+    const actorRole = reviewerMode ? 'authorized-utility-reviewer' : 'resident';
+    const result = reviewIncident(target, action, actorRole, reviewNote);
     if (!result.ok) {
       setReviewMessage(result.error);
       return;
@@ -222,6 +224,9 @@ function App() {
         {activeView === 'register' && (
           <RegisterView
             incidents={incidents}
+            residentZone={household.zone}
+            reviewerMode={reviewerMode}
+            setReviewerMode={setReviewerMode}
             reviewNote={reviewNote}
             setReviewNote={setReviewNote}
             reviewMessage={reviewMessage}
@@ -287,16 +292,16 @@ function HomeView(props) {
           <div className="card-topline"><div><div className="eyebrow">RESERVA EN CASA</div><h2 id="reserve-title">Tu estimación</h2></div><span className={`status-pill ${household.reserve === null ? 'muted' : 'green'}`}><i />{household.reserve === null ? 'Sin lectura' : readingLabel === 'simulated' ? 'SIMULADO' : 'ESTIMACIÓN'}</span></div>
           <div className="reserve-visual">
             <div className="water-drop" aria-hidden="true"><div className="water-fill" style={{ height: `${household.reserve ?? 0}%` }} /></div>
-            <div className="reserve-number">{household.reserve === null ? '—' : household.reserve}<span>{household.reserve === null ? '' : '%'}</span><small>{household.reserve === null ? 'Reserva desconocida' : 'del almacenamiento disponible'}</small></div>
+            <div className="reserve-number">{household.reserve === null ? '—' : household.reserve}<span>{household.reserve === null ? '' : '%'}</span><small>{household.reserve === null ? 'Reserva desconocida' : 'de tu capacidad habitual (aprox.)'}</small></div>
           </div>
           {household.reserve !== null && <div className="meter"><span style={{ width: `${household.reserve}%` }} /></div>}
-          <p className="quiet-note">{readingLabel === 'simulated' ? 'Lectura de nivel SIMULADA · no hay sensor conectado.' : 'Estimación personal, no medición oficial. No se comparte.'}</p>
+          <p className="quiet-note">{readingLabel === 'simulated' ? 'Nivel de ejemplo SIMULADO: baja seis puntos por diseño; no hay sensor conectado.' : 'Porcentaje aproximado que tú estimas manualmente; no son litros ni una medición oficial.'} No se comparte.</p>
           <form className="reading-form" onSubmit={submitManualReading} noValidate>
             <label htmlFor="reserve-input">Actualizar mi estimación (%)</label>
             <div className="input-row"><input id="reserve-input" inputMode="numeric" autoComplete="off" maxLength={6} value={readingInput} onChange={(event) => setReadingInput(event.target.value)} placeholder="Ej. 60" aria-describedby={readingError ? 'reading-error' : 'reading-help'} /><button className="button button-dark" type="submit">Guardar</button></div>
             <div id={readingError ? 'reading-error' : 'reading-help'} className={readingError ? 'field-error' : 'field-hint'} role={readingError ? 'alert' : undefined}>{readingError || 'Número entero de 0 a 100. Opcional.'}</div>
           </form>
-          <div className="button-row"><button className="button button-outline" onClick={simulateSensorReading}>◌ Simular sensor</button><button className="text-button" onClick={skipReading}>No registrar lectura</button></div>
+          <div className="button-row"><button className="button button-outline" onClick={simulateSensorReading}>◌ Ver ejemplo de sensor simulado</button><button className="text-button" onClick={skipReading}>No registrar lectura</button></div>
           {pendingReading && (
             <div className="review-callout" role="status"><strong>Requiere revisión humana</strong><p>{pendingReading.result.reason} Candidata: {pendingReading.value}% ({pendingReading.label === 'simulated' ? 'SIMULADO' : 'estimación'}).</p><button className="button button-outline" onClick={acceptReviewedReading}>Aceptar lectura revisada · SIMULADO</button></div>
           )}
@@ -313,19 +318,19 @@ function HomeView(props) {
               <p className="notice-caveat">Aviso ficticio confirmado por revisión simulada; no es información gubernamental. Sin estimación de restablecimiento ni afirmación de calidad del agua.</p>
             </article>
           )) : (
-            <div className="empty-notice"><span className="empty-icon">✓</span><strong>No hay avisos confirmados para esta zona.</strong><p>Los reportes sin verificar no aparecen aquí. Próxima revisión solo si se recibe información nueva.</p></div>
+            <div className="empty-notice"><span className="empty-icon">✓</span><strong>Ahora no hay avisos confirmados para esta zona.</strong><p>Esto no garantiza que el agua no se interrumpa. Los reportes sin verificar no aparecen aquí; consulta los canales acordados para recibir actualizaciones.</p></div>
           )}
           <div className="notice-footer"><span>COBERTURA POR ZONA GENERAL</span><span>⌖ {household.zone}</span></div>
           <div className="contact-preview">
             <div className="contact-icon" aria-hidden="true">↗</div>
-            <div><strong>{household.phone ? 'Vista previa SMS' : 'Ruta sin teléfono'}</strong><p>{household.phone ? '“Agua a Tiempo: revisa el aviso SIMULADO para tu zona. Próxima actualización: hoy a las 18:00.”' : 'Una persona de contacto puede compartir el aviso acordado. No requiere teléfono inteligente.'}</p><small>VISTA PREVIA · NO SE ENVÍA</small></div>
+            <div><strong>{household.phone ? 'Vista previa SMS' : 'Aviso por contacto acordado'}</strong><p>{household.phone ? '“Agua a Tiempo: revisa el aviso SIMULADO para tu zona. Próxima actualización: hoy a las 18:00.”' : 'Una persona de confianza puede llamarte o visitarte para compartir el aviso. No necesitas celular inteligente.'}</p><small>VISTA PREVIA · NO SE ENVÍA</small></div>
           </div>
         </section>
 
         <section className="card prep-card" aria-labelledby="prep-title">
           <div className="card-topline"><div><div className="eyebrow">PEQUEÑOS PASOS, A TU ALCANCE</div><h2 id="prep-title">¿Cómo quieres prepararte?</h2></div><span className="optional-label">OPCIONAL</span></div>
           <p>Elige una acción que tenga sentido para ti. No hay una respuesta incorrecta.</p>
-          {!household.storage && <div className="no-storage"><span aria-hidden="true">✳</span><div><strong>¿No tienes dónde almacenar agua?</strong><p>Está bien. Estas opciones no requieren tener un depósito.</p></div></div>}
+          {!household.storage && <div className="no-storage"><span aria-hidden="true">✳</span><div><strong>¿No tienes dónde guardar agua?</strong><p>No necesitas comprar un tanque: puedes ubicar agua comunitaria, pedir apoyo o consultar el próximo aviso.</p></div></div>}
           <div className="action-options">
             {options.map((option, index) => (
               <button className={`action-option ${preparation === option ? 'chosen' : ''}`} key={option} onClick={() => setPreparation(option)} aria-pressed={preparation === option}>
@@ -341,20 +346,24 @@ function HomeView(props) {
   );
 }
 
-function RegisterView({ incidents, reviewNote, setReviewNote, reviewMessage, updateIncident }) {
+function RegisterView({ incidents, residentZone, reviewerMode, setReviewerMode, reviewNote, setReviewNote, reviewMessage, updateIncident }) {
   return (
     <>
-      <PageHeading eyebrow="TRANSPARENCIA Y SEGUIMIENTO" title="Registro de avisos" description="Cada reporte tiene fuente, responsable y estado. Una alerta no es oficial hasta que una persona autorizada la confirma." />
-      <div className="review-banner"><span>◈</span><p><strong>Panel de revisión simulada.</strong> Usa los controles para practicar aprobación, corrección o rechazo. Ninguna acción contacta a una autoridad real.</p><span className="demo-chip">SOLO PRÁCTICA</span></div>
+      <PageHeading eyebrow="TRANSPARENCIA Y SEGUIMIENTO" title="Registro de avisos" description={`Tu zona es ${residentZone}. Las etiquetas señalan si cada reporte corresponde a tu zona; un reporte solo aparece como confirmado después de la revisión humana simulada.`} />
+      {reviewerMode ? (
+        <div className="review-banner reviewer-mode-banner"><span>◈</span><p><strong>Modo revisor de demostración.</strong> Estos controles son una simulación educativa, no una cuenta ni autorización real. Residentes y contactos offline no pueden confirmar avisos.</p><button className="button button-outline" onClick={() => setReviewerMode(false)}>Salir del modo revisor</button></div>
+      ) : (
+        <div className="review-banner resident-register-banner"><span>i</span><p><strong>Vista para residentes.</strong> Puedes consultar el estado, la zona y las actualizaciones; aquí no se muestran controles para aprobar o rechazar reportes.</p><button className="button button-outline" onClick={() => setReviewerMode(true)}>Ver modo revisor simulado</button></div>
+      )}
       <div className="register-list">
         {incidents.map((incident) => (
           <article className="card register-card" key={incident.id}>
-            <div className="register-header"><div><span className={`status-pill ${incident.status === 'verified' ? 'green' : incident.status === 'pending' ? 'amber' : 'muted'}`}><i />{statusLabels[incident.status]}</span><h2>{incident.description}</h2></div><span className="zone-chip">⌖ {incident.zone}</span></div>
+            <div className="register-header"><div><span className={`status-pill ${incident.status === 'verified' ? 'green' : incident.status === 'pending' ? 'amber' : 'muted'}`}><i />{statusLabels[incident.status]}</span><h2>{incident.description}</h2></div><span className={`zone-chip ${incident.zone === residentZone ? 'zone-match' : ''}`}>{incident.zone === residentZone ? 'TU ZONA' : 'OTRA ZONA'} · {incident.zone}</span></div>
             <div className="register-meta"><div><small>FUENTE</small><strong>{incident.source}</strong></div><div><small>RESPONSABLE</small><strong>{incident.owner}</strong></div><div><small>PRÓXIMA ACTUALIZACIÓN</small><strong>{incident.nextUpdate}</strong></div></div>
             {incident.correction && <div className="correction-note"><strong>Corrección — SIMULADO:</strong> {incident.correction}</div>}
             <div className="escalation"><span>ESCALACIÓN</span>{incident.escalation}</div>
             <details className="updates-details"><summary>Ver historial de actualizaciones ({incident.updates.length})</summary><ul>{incident.updates.map((update, index) => <li key={`${incident.id}-${index}`}>{update}</li>)}</ul></details>
-            {incident.status === 'pending' && (
+            {reviewerMode && incident.status === 'pending' && (
               <div className="review-controls">
                 <label htmlFor={`review-note-${incident.id}`}>Nota para corrección o rechazo (máximo 240 caracteres)</label>
                 <input id={`review-note-${incident.id}`} maxLength={240} value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} placeholder="Opcional para aprobar; requerida para corregir" />
@@ -366,7 +375,7 @@ function RegisterView({ incidents, reviewNote, setReviewNote, reviewMessage, upd
         ))}
       </div>
       {reviewMessage && <p className="inline-feedback" role="status">{reviewMessage}</p>}
-      <div className="authority-rule"><span>!</span><p><strong>Regla de autoridad:</strong> solo una persona revisora autorizada puede confirmar un incidente. La confirmación de este prototipo sigue siendo simulada y no constituye un aviso oficial.</p></div>
+      <div className="authority-rule"><span>!</span><p><strong>Regla de autoridad:</strong> en operación real solo una persona autorizada por la empresa de agua puede confirmar un incidente. Este prototipo no tiene autenticación; el modo revisor solo demuestra el flujo y no concede autoridad real.</p></div>
     </>
   );
 }
@@ -375,9 +384,9 @@ function AdversarialView({ household, households, selectedId, setSelectedId, add
   const checks = [
     { id: 'false', title: 'Alerta falsa o sin verificar', detail: 'Un reporte sin fuente autorizada no debe parecer un aviso oficial.', action: 'Crear reporte falso pendiente', run: addFalseAlert, pass: 'Solo pendiente; fuera de avisos confirmados.' },
     { id: 'missing', title: 'Lectura ausente', detail: 'Saltar una lectura no debe bloquear el servicio ni generar penalización.', action: 'Simular lectura ausente', run: skipReading, pass: 'Reserva desconocida; sin penalidad ni bloqueo.' },
-    { id: 'suspicious', title: 'Lectura sospechosa', detail: 'El kNN local usa ejemplos ficticios y solo señala valores para revisión humana.', action: 'Simular salto sospechoso', run: testSuspiciousReading, pass: 'Marcada para revisión; no produce alerta oficial.' },
-    { id: 'phone', title: 'Hogar sin teléfono inteligente', detail: 'El contacto offline debe poder compartir información básica.', pass: 'Ruta offline y vista previa; sin app obligatoria.' },
-    { id: 'storage', title: 'Hogar sin almacenamiento', detail: 'La preparación debe incluir opciones que no requieran depósito.', pass: 'Acciones alternativas; no se marca como incumplimiento.' },
+    { id: 'suspicious', title: 'Lectura sospechosa', detail: 'Una revisión automática sencilla usa ejemplos ficticios y solo señala valores para revisión humana.', action: 'Simular salto sospechoso', run: testSuspiciousReading, pass: 'Resultado esperado: pedir revisión; no crear aviso.' },
+    { id: 'phone', title: 'Hogar sin teléfono inteligente', detail: 'Una persona de confianza puede llamar o visitar para compartir el aviso acordado.', pass: 'Opción prevista: contacto acordado; no requiere app.' },
+    { id: 'storage', title: 'Hogar sin almacenamiento', detail: 'Se puede preparar sin comprar tanque ni recipientes adicionales.', pass: 'Opción prevista: apoyo o punto comunitario.' },
     { id: 'repair', title: 'Reparación no autorizada', detail: 'Nadie puede autorizar reparaciones ni gastos desde el prototipo.', action: 'Intentar solicitud de reparación', run: requestRepair, pass: 'Denegada; no hay despacho ni gasto.' },
     { id: 'privacy', title: 'Privacidad y exclusión', detail: 'No mostrar hogares ajenos, ubicación precisa ni castigar datos faltantes.', pass: 'Solo perfil seleccionado; datos de sesión y zonas generales.' },
   ];
@@ -394,11 +403,12 @@ function AdversarialView({ household, households, selectedId, setSelectedId, add
         {checks.map((check, index) => (
           <article className="card adversarial-card" key={check.id}>
             <div className="test-number">0{index + 1}</div>
-            <div className="test-copy"><h2>{check.title}</h2><p>{check.detail}</p><div className="test-result"><span>✓</span>{check.pass}</div></div>
+            <div className="test-copy"><h2>{check.title}</h2><p>{check.detail}</p><div className="test-result"><span aria-hidden="true">i</span>{check.pass}</div></div>
             {check.action && <button className="button button-outline test-action" onClick={check.run}>{check.action}</button>}
           </article>
         ))}
       </div>
+      <p className="test-disclaimer">Estas etiquetas describen el comportamiento esperado; no son resultados de una prueba automática ejecutada.</p>
       {scenarioMessage && <p className="inline-feedback" role="status">{scenarioMessage}</p>}
       <div className="repair-boundary"><div className="repair-icon">⊘</div><div><strong>Separación de responsabilidades</strong><p>Plomería privada del hogar y red pública son asuntos distintos. El prototipo no diagnostica, autoriza, despacha ni paga reparaciones. Cualquier gasto futuro requiere verificación y escalación aceptadas por la empresa de agua.</p></div></div>
       <PrivacyNote />

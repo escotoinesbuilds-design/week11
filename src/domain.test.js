@@ -11,7 +11,12 @@ import {
 
 test('only authorized human review can confirm an incident', () => {
   const pending = INITIAL_INCIDENTS[0];
-  assert.equal(reviewIncident(pending, 'approve', 'resident').ok, false);
+  for (const action of ['approve', 'correct', 'reject']) {
+    const residentAttempt = reviewIncident(pending, action, 'resident', 'Nota de prueba');
+    assert.equal(residentAttempt.ok, false);
+  }
+  assert.equal(pending.status, 'pending');
+  assert.equal(getVerifiedNoticesForZone([pending], 'Centro').length, 0);
   const result = reviewIncident(pending, 'approve', 'authorized-utility-reviewer');
   assert.equal(result.ok, true);
   assert.equal(result.incident.status, 'verified');
